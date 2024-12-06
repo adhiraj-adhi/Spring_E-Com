@@ -8,22 +8,27 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.ecom.project.dao.CategoryRepository;
 import com.ecom.project.model.Category;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
-	private List<Category> categories = new ArrayList<Category>();
+	private CategoryRepository catRepository;
+	
+	public CategoryServiceImpl(CategoryRepository catRepository) {
+		this.catRepository = catRepository;
+	}
 
 	@Override
 	public List<Category> getAllCategoriesService() {
-		return categories;
+		return catRepository.findAll();
 	}
 
 	@Override
 	public boolean createCategoryService(Category category) {
 		boolean status = false;
 		try {
-			categories.add(category);
+			catRepository.save(category);
 			status = true;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -46,23 +51,25 @@ public class CategoryServiceImpl implements CategoryService {
 
 	@Override
 	public String deleteCategoryService(Long id) {
-		boolean status = false;
-		status = categories.removeIf(category -> category.getCategoryId().equals(id));
-		if (!status)
+		Optional<Category> optCategory = catRepository.findById(id);
+		
+		if(optCategory.isEmpty())
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
-
+		else {
+			catRepository.deleteById(id);
+		}
 		return "Resource deleted successfully";
 	}
 
 	@Override
 	public Category updateCategoryService(Long categoryId, Category category) {
-		Optional<Category> optionalCategory = categories.stream().filter(cat -> cat.getCategoryId().equals(categoryId)).findFirst();
+		Optional<Category> optionalCategory = catRepository.findById(categoryId);
 		if (optionalCategory.isEmpty())
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
 		
 		Category oldCategory = optionalCategory.get();
 		oldCategory.setCategoryName(category.getCategoryName());
-		return oldCategory;
+		return catRepository.save(oldCategory);
 	}
 
 }
