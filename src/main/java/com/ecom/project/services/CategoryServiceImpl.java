@@ -1,37 +1,46 @@
 package com.ecom.project.services;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.ecom.project.dao.CategoryRepository;
+import com.ecom.project.exceptions.APIException;
+import com.ecom.project.exceptions.ResourceNotFoundException;
 import com.ecom.project.model.Category;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
 	private CategoryRepository catRepository;
-	
+
 	public CategoryServiceImpl(CategoryRepository catRepository) {
 		this.catRepository = catRepository;
 	}
 
 	@Override
 	public List<Category> getAllCategoriesService() {
-		return catRepository.findAll();
+		List<Category> categories = catRepository.findAll();
+		if(categories.isEmpty())
+			throw new APIException("There's no category present");
+		return categories;
 	}
 
 	@Override
 	public boolean createCategoryService(Category category) {
 		boolean status = false;
-		try {
-			catRepository.save(category);
-			status = true;
-		} catch (Exception e) {
-			e.printStackTrace();
+
+		// Before saving we need to check whether the category with same categoryName exists
+		Category savedCategory = catRepository.findByCategoryNameIgnoreCase(category.getCategoryName());
+		if (savedCategory == null) {
+			try {
+				catRepository.save(category);
+				status = true;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		} else {
+			throw new APIException("Category with the name " + category.getCategoryName() + " already exists");
 		}
 
 		return status;
@@ -52,9 +61,10 @@ public class CategoryServiceImpl implements CategoryService {
 	@Override
 	public String deleteCategoryService(Long id) {
 		Optional<Category> optCategory = catRepository.findById(id);
-		
-		if(optCategory.isEmpty())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
+
+		if (optCategory.isEmpty())
+//			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
+			throw new ResourceNotFoundException("Category", id, "categoryId");
 		else {
 			catRepository.deleteById(id);
 		}
@@ -63,13 +73,20 @@ public class CategoryServiceImpl implements CategoryService {
 
 	@Override
 	public Category updateCategoryService(Long categoryId, Category category) {
-		Optional<Category> optionalCategory = catRepository.findById(categoryId);
-		if (optionalCategory.isEmpty())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
-		
-		Category oldCategory = optionalCategory.get();
-		oldCategory.setCategoryName(category.getCategoryName());
-		return catRepository.save(oldCategory);
+		// Before updating we need to check whether the category with updated categoryName exists
+		Category savedCategory = catRepository.findByCategoryNameIgnoreCase(category.getCategoryName());
+		if (savedCategory != null) {
+			throw new APIException("Category with the name " + category.getCategoryName() + " already exists");
+		} else {
+			Optional<Category> optionalCategory = catRepository.findById(categoryId);
+			if (optionalCategory.isEmpty())
+//				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource Not Found");
+				throw new ResourceNotFoundException("Category", categoryId, "categoryId");
+
+			Category oldCategory = optionalCategory.get();
+			oldCategory.setCategoryName(category.getCategoryName());
+			return catRepository.save(oldCategory);
+		}
 	}
 
 }
