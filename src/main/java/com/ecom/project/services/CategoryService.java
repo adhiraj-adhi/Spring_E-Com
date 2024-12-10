@@ -4,7 +4,7 @@ import com.ecom.project.payload.CategoryDTO;
 import com.ecom.project.payload.CategoryResponse;
 
 public interface CategoryService {
-	CategoryResponse getAllCategoriesService(Integer pageNumber, Integer pageSize);
+	CategoryResponse getAllCategoriesService(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 	CategoryDTO createCategoryService(CategoryDTO categoryDTO);
 	CategoryDTO deleteCategoryService(Long id);
 	CategoryDTO updateCategoryService(Long categoryId, CategoryDTO categoryDTO);

@@ -30,42 +30,22 @@ public class CategoryController {
 	}
 
 	@GetMapping("/public/categories")
-//	public ResponseEntity<List<Category>> getAllCategories() {
 	public ResponseEntity<CategoryResponse> getAllCategories(
 			@RequestParam(name="pageNumber", defaultValue = AppConstants.PAGE_NUMBER) Integer pageNumber, // pageNumber = 0 => first page
-			@RequestParam(name="pageSize", defaultValue = AppConstants.PAGE_SIZE) Integer pageSize) {
-		return ResponseEntity.ok(catService.getAllCategoriesService(pageNumber, pageSize));
+			@RequestParam(name="pageSize", defaultValue = AppConstants.PAGE_SIZE) Integer pageSize,
+			@RequestParam(name="sortBy", defaultValue = AppConstants.SORT_BY) String sortBy,
+			@RequestParam(name="sortOrder", defaultValue = AppConstants.SORT_ORDER) String sortOrder) {
+		return ResponseEntity.ok(catService.getAllCategoriesService(pageNumber, pageSize, sortBy, sortOrder));
 	}
 	
 	@PostMapping("/admin/categories")
-//	public ResponseEntity<String> createCategory(@Valid @RequestBody Category category) {	
 	public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
 		CategoryDTO catDTO = catService.createCategoryService(categoryDTO);
 		return new ResponseEntity<>(catDTO, HttpStatus.CREATED);
 	}
 	
-	
-//	@DeleteMapping("/admin/categories/{categoryId}")
-//	public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId) {
-//		boolean status = catService.deleteCategoryService(categoryId);
-//		if(status)
-//			return new ResponseEntity<>("Resource deleted successfully", HttpStatus.OK);
-//		else
-//			return new ResponseEntity<>("Resource not found", HttpStatus.NOT_FOUND);
-//	}
-	
-	
 	@DeleteMapping("/admin/categories/{categoryId}")  // Using 
-	public ResponseEntity<CategoryDTO> deleteCategory(@PathVariable Long categoryId) {
-//		try {
-//			String str = catService.deleteCategoryService(categoryId);
-//			respEntity = new ResponseEntity<>(str, HttpStatus.OK);		
-//		} 
-//		catch (ResponseStatusException e) {
-////			respEntity = new ResponseEntity<>(e.getMessage(), e.getStatusCode()); // Here, error message is as: 404 NOT_FOUND "Resource Not Found"
-//			respEntity = new ResponseEntity<>(e.getReason(), e.getStatusCode()); // Here, error message is as: Resource Not Found
-//		}
-		
+	public ResponseEntity<CategoryDTO> deleteCategory(@PathVariable Long categoryId) {		
 		CategoryDTO catDTO = catService.deleteCategoryService(categoryId);
 		ResponseEntity<CategoryDTO> respEntity = new ResponseEntity<>(catDTO, HttpStatus.OK);	
 		return respEntity;
@@ -73,16 +53,6 @@ public class CategoryController {
 	
 	@PutMapping("/admin/categories/{categoryId}")
 	public ResponseEntity<CategoryDTO> updateCategory(@Valid @RequestBody CategoryDTO categoryDTO, @PathVariable Long categoryId) {
-//		try {
-//			Category savedCategory = catService.updateCategoryService(categoryId, category);
-//			respEntity = new ResponseEntity<>("Updated the category with category id "+categoryId, HttpStatus.OK);		
-//		} 
-//		catch (ResponseStatusException e) {
-//			respEntity = new ResponseEntity<>(e.getReason(), e.getStatusCode());
-//		}
-		
-		// No need of Exception Handling as we have centralized it
-		
 		CategoryDTO catDTO = catService.updateCategoryService(categoryId, categoryDTO);
 		ResponseEntity<CategoryDTO> respEntity = new ResponseEntity<>(catDTO, HttpStatus.OK);		
 		return respEntity;
