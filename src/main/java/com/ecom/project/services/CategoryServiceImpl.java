@@ -2,39 +2,83 @@ package com.ecom.project.services;
 
 import java.util.List;
 import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.ecom.project.dao.CategoryRepository;
 import com.ecom.project.exceptions.APIException;
 import com.ecom.project.exceptions.ResourceNotFoundException;
 import com.ecom.project.model.Category;
+import com.ecom.project.payload.CategoryDTO;
+import com.ecom.project.payload.CategoryResponse;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
 	private CategoryRepository catRepository;
+	
+	@Autowired
+	private ModelMapper modelMapper;
 
 	public CategoryServiceImpl(CategoryRepository catRepository) {
 		this.catRepository = catRepository;
 	}
+	
+	
 
 	@Override
-	public List<Category> getAllCategoriesService() {
-		List<Category> categories = catRepository.findAll();
+	public CategoryResponse getAllCategoriesService(Integer pageNumber, Integer pageSize) {
+		Pageable pageable = PageRequest.of(pageNumber, pageSize);
+		Page<Category> page = catRepository.findAll(pageable);
+		
+		List<Category> categories = page.getContent();
 		if(categories.isEmpty())
 			throw new APIException("There's no category present");
-		return categories;
+		
+		/* Using without ModelMapper:
+		 * CategoryDTO categoryDTO = new CategoryDTO();
+		 * List<CategoryDTO> categoryDTOList = categories.stream().map(category -> {
+		 * 	categoryDTO.setCategoryId(category.getCategoryId());
+		 *  categoryDTO.setCategoryName(category.getCategoryName());
+		 *	return categoryDTO;
+		 *	}).toList();
+		 *
+		 * CategoryResponse categoryResponse = new CategoryResponse();
+		 * categoryResponse.setContent(categoryDTOList);
+		 * return categoryResponse;
+		 */
+		
+		// With ModelMapper:
+		
+				
+		List<CategoryDTO> categoryDTOs = categories.stream()
+				.map(category -> modelMapper.map(category, CategoryDTO.class))
+				.toList();
+		
+		CategoryResponse categoryResponse = new CategoryResponse();
+		categoryResponse.setContent(categoryDTOs);
+		categoryResponse.setPageNumber(pageNumber);
+		categoryResponse.setPageSize(pageSize);
+		categoryResponse.setTotalElements(page.getTotalElements());
+		categoryResponse.setTotalPages(page.getTotalPages());
+		categoryResponse.setLastPage(page.isLast());
+		return categoryResponse;
 	}
 
 	@Override
-	public boolean createCategoryService(Category category) {
-		boolean status = false;
+//	public boolean createCategoryService(Category category) {
+	public CategoryDTO createCategoryService(CategoryDTO categoryDTO) {
+		Category category = modelMapper.map(categoryDTO, Category.class);
 
 		// Before saving we need to check whether the category with same categoryName exists
 		Category savedCategory = catRepository.findByCategoryNameIgnoreCase(category.getCategoryName());
 		if (savedCategory == null) {
 			try {
 				catRepository.save(category);
-				status = true;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -43,7 +87,7 @@ public class CategoryServiceImpl implements CategoryService {
 			throw new APIException("Category with the name " + category.getCategoryName() + " already exists");
 		}
 
-		return status;
+		return modelMapper.map(category, CategoryDTO.class);
 	}
 
 //	@Override
@@ -59,7 +103,7 @@ public class CategoryServiceImpl implements CategoryService {
 //	}
 
 	@Override
-	public String deleteCategoryService(Long id) {
+	public CategoryDTO deleteCategoryService(Long id) {
 		Optional<Category> optCategory = catRepository.findById(id);
 
 		if (optCategory.isEmpty())
@@ -68,11 +112,12 @@ public class CategoryServiceImpl implements CategoryService {
 		else {
 			catRepository.deleteById(id);
 		}
-		return "Resource deleted successfully";
+		return modelMapper.map(optCategory.get(), CategoryDTO.class);
 	}
 
 	@Override
-	public Category updateCategoryService(Long categoryId, Category category) {
+	public CategoryDTO updateCategoryService(Long categoryId, CategoryDTO categoryDTO) {
+		Category category = modelMapper.map(categoryDTO, Category.class);
 		// Before updating we need to check whether the category with updated categoryName exists
 		Category savedCategory = catRepository.findByCategoryNameIgnoreCase(category.getCategoryName());
 		if (savedCategory != null) {
@@ -85,7 +130,8 @@ public class CategoryServiceImpl implements CategoryService {
 
 			Category oldCategory = optionalCategory.get();
 			oldCategory.setCategoryName(category.getCategoryName());
-			return catRepository.save(oldCategory);
+			catRepository.save(oldCategory);
+			return modelMapper.map(oldCategory, CategoryDTO.class);
 		}
 	}
 

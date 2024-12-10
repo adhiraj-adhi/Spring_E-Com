@@ -1,7 +1,5 @@
 package com.ecom.project.controllers;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,9 +9,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ecom.project.model.Category;
+import com.ecom.project.config.AppConstants;
+import com.ecom.project.payload.CategoryDTO;
+import com.ecom.project.payload.CategoryResponse;
 import com.ecom.project.services.CategoryService;
 
 import jakarta.validation.Valid;
@@ -29,17 +30,18 @@ public class CategoryController {
 	}
 
 	@GetMapping("/public/categories")
-	public ResponseEntity<List<Category>> getAllCategories() {
-		return ResponseEntity.ok(catService.getAllCategoriesService());
+//	public ResponseEntity<List<Category>> getAllCategories() {
+	public ResponseEntity<CategoryResponse> getAllCategories(
+			@RequestParam(name="pageNumber", defaultValue = AppConstants.PAGE_NUMBER) Integer pageNumber, // pageNumber = 0 => first page
+			@RequestParam(name="pageSize", defaultValue = AppConstants.PAGE_SIZE) Integer pageSize) {
+		return ResponseEntity.ok(catService.getAllCategoriesService(pageNumber, pageSize));
 	}
 	
 	@PostMapping("/admin/categories")
-	public ResponseEntity<String> createCategory(@Valid @RequestBody Category category) {		
-		boolean status = catService.createCategoryService(category);
-		if(status)
-			return new ResponseEntity<>("Resource created", HttpStatus.CREATED);
-		else
-			return new ResponseEntity<>("Resource creation failed", HttpStatus.INTERNAL_SERVER_ERROR);
+//	public ResponseEntity<String> createCategory(@Valid @RequestBody Category category) {	
+	public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
+		CategoryDTO catDTO = catService.createCategoryService(categoryDTO);
+		return new ResponseEntity<>(catDTO, HttpStatus.CREATED);
 	}
 	
 	
@@ -54,7 +56,7 @@ public class CategoryController {
 	
 	
 	@DeleteMapping("/admin/categories/{categoryId}")  // Using 
-	public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId) {
+	public ResponseEntity<CategoryDTO> deleteCategory(@PathVariable Long categoryId) {
 //		try {
 //			String str = catService.deleteCategoryService(categoryId);
 //			respEntity = new ResponseEntity<>(str, HttpStatus.OK);		
@@ -64,14 +66,13 @@ public class CategoryController {
 //			respEntity = new ResponseEntity<>(e.getReason(), e.getStatusCode()); // Here, error message is as: Resource Not Found
 //		}
 		
-		String str = catService.deleteCategoryService(categoryId);
-		ResponseEntity<String> respEntity = new ResponseEntity<>(str, HttpStatus.OK);	
+		CategoryDTO catDTO = catService.deleteCategoryService(categoryId);
+		ResponseEntity<CategoryDTO> respEntity = new ResponseEntity<>(catDTO, HttpStatus.OK);	
 		return respEntity;
 	}
 	
 	@PutMapping("/admin/categories/{categoryId}")
-	public ResponseEntity<String> updateCategory(@RequestBody Category category, @PathVariable Long categoryId) {
-		ResponseEntity<String> respEntity = null;
+	public ResponseEntity<CategoryDTO> updateCategory(@Valid @RequestBody CategoryDTO categoryDTO, @PathVariable Long categoryId) {
 //		try {
 //			Category savedCategory = catService.updateCategoryService(categoryId, category);
 //			respEntity = new ResponseEntity<>("Updated the category with category id "+categoryId, HttpStatus.OK);		
@@ -82,8 +83,8 @@ public class CategoryController {
 		
 		// No need of Exception Handling as we have centralized it
 		
-		Category savedCategory = catService.updateCategoryService(categoryId, category);
-		respEntity = new ResponseEntity<>("Updated the category with category id "+categoryId, HttpStatus.OK);		
+		CategoryDTO catDTO = catService.updateCategoryService(categoryId, categoryDTO);
+		ResponseEntity<CategoryDTO> respEntity = new ResponseEntity<>(catDTO, HttpStatus.OK);		
 		return respEntity;
 	}
 }
