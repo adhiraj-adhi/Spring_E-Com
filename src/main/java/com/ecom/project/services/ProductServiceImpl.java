@@ -10,11 +10,16 @@ import java.util.UUID;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ecom.project.dao.CategoryRepository;
 import com.ecom.project.dao.ProductRepository;
+import com.ecom.project.exceptions.APIException;
 import com.ecom.project.exceptions.ResourceNotFoundException;
 import com.ecom.project.model.Category;
 import com.ecom.project.model.Product;
@@ -40,10 +45,24 @@ public class ProductServiceImpl implements ProductService {
 	private String path; // reading path from application.properties file
 
 	@Override
-	public ProductDTO addProductService(Long categoryId, Product product) {
+	public ProductDTO addProductService(Long categoryId, Product product) {		
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ResourceNotFoundException("Category", categoryId, "categoryId"));
-
+		
+		
+		// Here, first we need to check if product is already present or not in the specified Category
+		boolean isProductPresent = false;
+		List<Product> products = category.getProducts();
+		for(Product pro: products) {
+			if(pro.getProductName().equals(product.getProductName())) {
+				isProductPresent = true;
+				break;
+			}
+		}
+		
+		if(isProductPresent)
+			throw new APIException("Product already exists!!");
+		
 		product.setCategory(category);
 		product.setImage("default.png");
 		double specialPrice = product.getPrice() - (product.getPrice() * product.getDiscount() * 0.01);
@@ -55,44 +74,86 @@ public class ProductServiceImpl implements ProductService {
 	}
 
 	@Override
-	public ProductResponse getAllProductsService() {
-		List<Product> products = productRepository.findAll();
+	public ProductResponse getAllProductsService(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+		Sort sortAndOrder = sortOrder.equalsIgnoreCase("asc") 
+				? Sort.by(sortBy).ascending()
+				: Sort.by(sortBy).descending();
+		Pageable pageable = PageRequest.of(pageNumber, pageSize, sortAndOrder);
+		Page<Product> page = productRepository.findAll(pageable);
+		
+		List<Product> products = page.getContent();
+		
+		// Here, we need to check whether there is any product in database or not
+		if(products.isEmpty())
+			throw new APIException("No product exists!!");
 
 		List<ProductDTO> productDTOs = products.stream().map(product -> modelMapper.map(product, ProductDTO.class))
 				.toList();
 
 		ProductResponse productResponse = new ProductResponse();
 		productResponse.setContent(productDTOs);
+		productResponse.setPageNumber(pageNumber);
+		productResponse.setPageSize(pageSize);
+		productResponse.setTotalElements(page.getTotalElements());
+		productResponse.setTotalPages(page.getTotalPages());
+		productResponse.setLastPage(page.isLast());
 
 		return productResponse;
 	}
 
 	@Override
-	public ProductResponse getProductsByCategoryService(Long categoryId) {
+	public ProductResponse getProductsByCategoryService(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
 		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ResourceNotFoundException("Category", categoryId, "categoryId"));
 
-		List<Product> products = productRepository.findByCategoryCategoryId(categoryId);
+		Sort sortAndOrder = sortOrder.equalsIgnoreCase("asc") 
+				? Sort.by(sortBy).ascending()
+				: Sort.by(sortBy).descending();
+		Pageable pageable = PageRequest.of(pageNumber, pageSize, sortAndOrder);
+		Page<Product> page = productRepository.findByCategoryCategoryId(categoryId, pageable);
+		
+		List<Product> products = page.getContent();
 
 		List<ProductDTO> productDTOs = products.stream().map(product -> modelMapper.map(product, ProductDTO.class))
 				.toList();
 
 		ProductResponse productResponse = new ProductResponse();
 		productResponse.setContent(productDTOs);
+		productResponse.setPageNumber(pageNumber);
+		productResponse.setPageSize(pageSize);
+		productResponse.setTotalElements(page.getTotalElements());
+		productResponse.setTotalPages(page.getTotalPages());
+		productResponse.setLastPage(page.isLast());
 
 		return productResponse;
 	}
 
 	@Override
-	public ProductResponse getProductByKeywordService(String keyword) {
-		List<Product> products = productRepository.findByProductNameIgnoreCaseContaining(keyword);
+	public ProductResponse getProductByKeywordService(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+		Sort sortAndOrder = sortOrder.equalsIgnoreCase("asc") 
+				? Sort.by(sortBy).ascending()
+				: Sort.by(sortBy).descending();
+		Pageable pageable = PageRequest.of(pageNumber, pageSize, sortAndOrder);
+		Page<Product> page = productRepository.findByProductNameIgnoreCaseContaining(keyword, pageable);
+		
+		List<Product> products = page.getContent();
+		
+		
+		// Here, we need to check whether there is any product in database or not
+		if(products.isEmpty())
+			throw new APIException("No product with specified keyword exists!!");
 		
 		List<ProductDTO> productDTOs = products.stream().map(product -> modelMapper.map(product, ProductDTO.class))
 				.toList();
 
 		ProductResponse productResponse = new ProductResponse();
 		productResponse.setContent(productDTOs);
-
+		productResponse.setPageNumber(pageNumber);
+		productResponse.setPageSize(pageSize);
+		productResponse.setTotalElements(page.getTotalElements());
+		productResponse.setTotalPages(page.getTotalPages());
+		productResponse.setLastPage(page.isLast());
+		
 		return productResponse;
 	}
 

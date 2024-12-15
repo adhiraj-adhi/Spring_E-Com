@@ -11,11 +11,11 @@ public interface ProductService {
 
 	ProductDTO addProductService(Long categoryId, Product product);
 
-	ProductResponse getAllProductsService();
+	ProductResponse getAllProductsService(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
-	ProductResponse getProductsByCategoryService(Long categoryId);
+	ProductResponse getProductsByCategoryService(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
-	ProductResponse getProductByKeywordService(String keyword);
+	ProductResponse getProductByKeywordService(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
 	ProductDTO updateProductService(Long productId, Product product);
 

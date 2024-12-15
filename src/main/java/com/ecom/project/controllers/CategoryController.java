@@ -33,7 +33,7 @@ public class CategoryController {
 	public ResponseEntity<CategoryResponse> getAllCategories(
 			@RequestParam(name="pageNumber", defaultValue = AppConstants.PAGE_NUMBER) Integer pageNumber, // pageNumber = 0 => first page
 			@RequestParam(name="pageSize", defaultValue = AppConstants.PAGE_SIZE) Integer pageSize,
-			@RequestParam(name="sortBy", defaultValue = AppConstants.SORT_BY) String sortBy,
+			@RequestParam(name="sortBy", defaultValue = AppConstants.SORT_CATEGORY_BY) String sortBy,
 			@RequestParam(name="sortOrder", defaultValue = AppConstants.SORT_ORDER) String sortOrder) {
 		return ResponseEntity.ok(catService.getAllCategoriesService(pageNumber, pageSize, sortBy, sortOrder));
 	}
